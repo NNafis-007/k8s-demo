@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-demo-api
+  labels: # key -value pair
+    app: k8s-demo-api 
+
+# SPEC of the Deployment pod
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: k8s-demo-api
+  # Template config, with which every pod (docker container) will be created
+  template:
+    metadata:
+      labels:
+        app: k8s-demo-api
+    spec:
+      containers:
+      - name: k8s-demo-api
+        image: nnafis007/k8s-demo-api:latest
+        ports: 
+          - containerPort: 3000
+        env: 
+          - name: NODE_ENV
+            value: "production"
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name #Line 3 -> metadata.name
+        resources:
+          requests:
+            cpu: "100m" # 10% CPU / 0.1 of a CPU core
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        # Check is ready to receive traffic
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        # Check if alive, ELSE -> Restart pod (docker container)
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 20
